@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta content="width=device-width,initial-scale=1" name="viewport" />
+    <title>late night thoughts</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lexend+Deca&display=swap"
+      rel="stylesheet"
+    />
+    <link href="main.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <div id="page-wrapper">
+      <header><h1>late night thoughts</h1></header>
+      <div id="page-content">
+        <div class="content-wrapper">
+          <section id="theme">
+            <div class="theme-label">TONIGHT'S THEME</div>
+            <div class="theme-text">a memory you keep coming back to</div>
+            <div class="theme-underline"></div>
+          </section>
+
+          <p id="locked-message">🔒 posting opens at 10PM local time</p>
+
+          <div class="form-wrapper">
+            <div class="post-form-wrapper">
+              <p id="post-counter" class="post-counter">0/3 shared</p>
+
+              <section id="post-form">
+                <textarea
+                  id="thought-input"
+                  maxlength="800"
+                  placeholder="share a late night thought..."
+                ></textarea>
+                <div id="prompt-checkbox">
+                  <input id="relates-checkbox" type="checkbox" />
+                  <label for="relates-checkbox"
+                    >this thought relates to tonight's theme</label
+                  >
+                </div>
+                <button id="submit-button">send</button>
+                <p id="final-message" class="soft-final">
+                  you’ve shared your thoughts for tonight 🌙
+                </p>
+              </section>
+            </div>
+          </div>
+
+          <div id="posts-title">
+            <div class="posts-line"></div>
+            <div class="posts-center">
+              <span class="shooting-star">🌠</span> shared thoughts
+            </div>
+            <div class="posts-line"></div>
+            C
+          </div>
+
+          <section id="posts-feed"></section>
+          <div id="empty-placeholder">
+            no thoughts yet... be the first to share 🌌
+          </div>
+        </div>
+
+        <footer>
+          <p>🌖made under the same moon</p>
+        </footer>
+
+        <div id="stars-background"></div>
+        <div id="transition-overlay">
+          <div id="sky-orb">🌙</div>
+          <div id="transition-title">good night</div>
+          <div id="transition-sub">time to wind down...</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const posts = document.querySelectorAll(".post");
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("visible");
+            }
+          });
+        },
+        { threshold: 0.1 }
+      );
+      posts.forEach((post) => {
+        observer.observe(post);
+      });
+    </script>
+  </body>
+</html>
