@@ -1,5 +1,4 @@
 import dotenv from "dotenv";
-dotenv.config({ path: ".env" });
 
 import { createClient } from "@supabase/supabase-js";
 
@@ -21,7 +20,7 @@ export default async function handler(req, res) {
     {
       text,
       theme,
-      created_at: timestamp || new Date().toISOString(),
+      created_at: new Date().toISOString(),
     },
   ]);
 

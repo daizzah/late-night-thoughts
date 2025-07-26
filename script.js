@@ -1,145 +1,110 @@
-const isTesting = false;
-let latestPostTime = null;
-const allThemes = [
-  "something you never said",
-  "a memory you keep coming back to",
-  "the thought that always hits at 2am",
-  "one truth you try to ignore",
-  "what you wish they knew",
-  "something that changed you quietly",
-  "a time you felt truly seen",
-  "a moment you keep replaying",
-  "the version of you that no one meets",
-  "something that still lingers",
-  "what haunts you softly",
-  "the goodbye that didn’t feel real",
-  "a lie you told to protect someone",
-  "if you could go back, you’d…",
-  "something that broke you but no one noticed",
-  "something you miss but can’t explain",
-  "a scent that brings you somewhere",
-  "a song that still feels like a person",
-  "the most peaceful memory you have",
-  "when did time feel like it stopped?",
-  "something you’re scared to forget",
-  "a detail you always notice",
-  "something they said that stuck",
-  "a habit you didn’t realize was from them",
-  "a place that holds meaning",
-  "your favorite moment that felt small at the time",
-  "one thing you’re thankful for",
-  "something you’re learning to accept",
-  "something you’ve healed from",
-  "the kindest thing someone’s ever said to you",
-  "a version of you you’re becoming",
-  "the last time you felt truly proud",
-  "a moment you chose yourself",
-  "when you realized you’ve grown",
-  "what feels like home lately",
-  "something that reminded you of joy",
-  "your personal definition of peace",
-  "if today was a song, what would it be?",
-  "what made you laugh today?",
-  "a weird dream you had",
-  "your most recent intrusive thought",
-  "something small that made you smile",
-  "a random realization u had",
-  "something u said in ur head but not out loud",
-  "the vibe of your day in 3 words",
-  "a weird memory that resurfaced",
-  "how are u different now?",
-  "what would the younger you think of you today?",
-  "something you only admit in your head",
-  "if someone wrote about u, what would they say?",
-  "how do u define love?",
-  "something you wish you believed",
-  "a label you feel but don’t say out loud",
-  "the part of you people don’t get",
-  "who are you when no one's around?",
-  "what part of u is still hiding?",
-  "something you never got to say",
-  "the moment it started to change",
-  "a feeling you miss",
-  "what you needed to hear",
-  "something that meant everything at the time",
-  "i knew it was over when…",
-  "a thought you always avoid",
-  "if you could relive one moment",
-  "the version of you from a year ago",
-  "a goodbye that didn’t feel like one",
-  "what you still wonder about",
-  "something you never told anyone",
-  "the thing that hurt more than it should’ve",
-  "your quietest regret",
-  "a moment you realized you’ve changed",
-  "what peace would look like for you",
-  "the thing you wish you’d said back",
-  "if you could visit your past self",
-];
+let tonightTheme = null;
+
 window.addEventListener("scroll", () => {
   const scrolled = window.scrollY;
   const stars = document.getElementById("stars-background");
   stars.style.backgroundPositionY = `${scrolled * 0.1}px`;
 });
+
+async function loadTheme() {
+  try {
+    const res = await fetch("/api/theme");
+    const data = await res.json();
+    tonightTheme = data.theme;
+
+    const themeEl = document.getElementById("theme-text");
+    themeEl.textContent = tonightTheme;
+    themeEl.style.visibility = "visible";
+  } catch (err) {
+    console.error("failed to fetch theme", err);
+  }
+}
+
+function getRelativeTimeString(date) {
+  const now = new Date();
+  const diff = now - date;
+
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (seconds < 60) return "just now";
+  if (minutes < 60) return `${minutes} min${minutes !== 1 ? "s" : ""} ago`;
+  if (hours < 24) return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+  if (days < 7) return `${days} day${days !== 1 ? "s" : ""} ago`;
+
+  return date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
 function setThemeBasedOnTime() {
   const body = document.body;
   const hour = new Date().getHours();
-  let mode = hour >= 5 && hour < 22 ? "day" : "night";
+  const mode = hour >= 5 && hour < 22 ? "day" : "night";
 
-  if (mode === "day") {
-    body.classList.add("day");
-    body.classList.remove("night");
-  } else {
-    body.classList.add("night");
-    body.classList.remove("day");
-  }
-  const starsBackground = document.getElementById("stars-background");
-  starsBackground.style.display = mode === "day" ? "none" : "block";
+  body.classList.toggle("day", mode === "day");
+  body.classList.toggle("night", mode === "night");
+
+  const stars = document.getElementById("stars-background");
+  stars.style.display = mode === "day" ? "none" : "block";
 }
+
 function getDateStamp() {
   const now = new Date();
   return `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
 }
-function updatePostingAccess() {
-  const body = document.body;
-  const postForm = document.getElementById("post-form");
-  const thoughtInput = document.getElementById("thought-input");
-  const submitButton = document.getElementById("submit-button");
-  const relatesCheckbox = document.getElementById("relates-checkbox");
-  const lockedMessage = document.getElementById("locked-message");
-  const themeSection = document.getElementById("theme");
-  const themeTextEl = document.querySelector(".theme-text");
-  if (!themeTextEl) return;
+
+function getTodayKey() {
   const now = new Date();
-  const hour = now.getHours();
+  return `postCount-${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
+}
+
+function getPostCount() {
+  return parseInt(localStorage.getItem(getTodayKey())) || 0;
+}
+
+function updatePostCounter() {
+  const count = getPostCount();
+  document.getElementById("post-counter").textContent = `${count}/3 shared`;
+}
+
+function incrementPostCount() {
+  const key = getTodayKey();
+  const current = getPostCount();
+  localStorage.setItem(key, current + 1);
+  updatePostCounter();
+}
+
+function updateLockedMessage(mode) {
+  const msg = document.getElementById("locked-message");
+  msg.innerHTML =
+    mode === "day"
+      ? "🔒 posting opens at 10PM"
+      : "🕐 posting is open until 5AM";
+}
+
+async function updatePostingAccess() {
+  const hour = new Date().getHours();
   const mode = hour >= 5 && hour < 22 ? "day" : "night";
 
-  if (mode === "day") {
-    thoughtInput.disabled = !0;
-    submitButton.disabled = !0;
-    relatesCheckbox.disabled = !0;
-    submitButton.style.cursor = "not-allowed";
-    body.classList.add("form-locked");
-    lockedMessage.classList.add("show");
-    themeSection.style.display = "none";
-    themeTextEl.textContent = "";
-  } else {
-    thoughtInput.disabled = !1;
-    submitButton.disabled = !1;
-    relatesCheckbox.disabled = !1;
-    submitButton.style.cursor = "pointer";
-    body.classList.remove("form-locked");
-    lockedMessage.classList.remove("show");
-    themeSection.style.display = "block";
-    const storedTheme = localStorage.getItem("tonightTheme");
-    if (storedTheme) {
-      themeTextEl.textContent = storedTheme;
-    } else {
-      const newTheme = getTonightTheme();
-      localStorage.setItem("tonightTheme", newTheme);
-      themeTextEl.textContent = newTheme;
-    }
-  }
+  const body = document.body;
+  const input = document.getElementById("thought-input");
+  const submit = document.getElementById("submit-button");
+  const checkbox = document.getElementById("relates-checkbox");
+  const themeSection = document.getElementById("theme");
+  const themeText = document.querySelector(".theme-text");
+  const lockedMsg = document.getElementById("locked-message");
+
+  const disable = mode === "day";
+  input.disabled = disable;
+  submit.disabled = disable;
+  checkbox.disabled = disable;
+  submit.style.cursor = disable ? "not-allowed" : "pointer";
+  themeSection.style.display = disable ? "none" : "block";
+  themeText.textContent = disable ? "" : tonightTheme || "no theme set";
+  body.classList.toggle("form-locked", disable);
+  lockedMsg.classList.toggle("show", disable);
+
   const today = getDateStamp();
   const lastUsed = localStorage.getItem("lastPostDate");
   if (lastUsed !== today) {
@@ -148,23 +113,8 @@ function updatePostingAccess() {
     document.getElementById("post-form").classList.remove("post-limit-locked");
     document.getElementById("final-message")?.classList.remove("show");
   }
+
   updateLockedMessage(mode);
-}
-function toggleDevMode() {
-  devForcedMode = devForcedMode === "night" ? "day" : "night";
-  if (devForcedMode === "night") {
-    localStorage.removeItem(getTodayKey());
-    localStorage.removeItem("lastPostDate");
-    localStorage.removeItem("tonightTheme");
-    const newTheme = getTonightTheme();
-    localStorage.setItem("tonightTheme", newTheme);
-  }
-  playTransition(devForcedMode);
-  setThemeBasedOnTime();
-  updatePostingAccess();
-  updatePostCounter();
-  checkPostLimit();
-  loadRecentPosts();
 }
 
 function playTransition(mode) {
@@ -172,71 +122,37 @@ function playTransition(mode) {
   const orb = document.getElementById("sky-orb");
   const title = document.getElementById("transition-title");
   const sub = document.getElementById("transition-sub");
-  if (mode === "night") {
-    orb.innerText = "🌙";
-    title.innerText = "good night";
-    sub.innerText = "time to wind down...💤";
-  } else {
-    orb.innerText = "🌞";
-    title.innerText = "good morning";
-    sub.innerText = "it’s a new day!";
-  }
+
+  orb.innerText = mode === "night" ? "🌙" : "🌞";
+  title.innerText = mode === "night" ? "good night" : "good morning";
+  sub.innerText =
+    mode === "night" ? "time to wind down...💤" : "it’s a new day!";
+
   overlay.classList.add("show");
   setTimeout(() => overlay.classList.remove("show"), 2500);
 }
-function updateLockedMessage(currentMode) {
-  const lockedMessage = document.getElementById("locked-message");
-  if (currentMode === "day") {
-    lockedMessage.innerHTML = `🔒 posting opens at 10PM`;
-  } else {
-    lockedMessage.innerHTML = `🕐 posting is open until 5AM`;
-  }
-}
-function getTodayKey() {
-  const now = new Date();
-  return `postCount-${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
-}
-function getPostCount() {
-  const key = getTodayKey();
-  return parseInt(localStorage.getItem(key)) || 0;
-}
-function updatePostCounter() {
-  const count = getPostCount();
-  const counter = document.getElementById("post-counter");
-  counter.textContent = `${count}/3 shared`;
-}
-function incrementPostCount() {
-  const key = getTodayKey();
-  const current = getPostCount();
-  localStorage.setItem(key, current + 1);
-  updatePostCounter();
-}
+
 function checkPostLimit() {
   const count = getPostCount();
-  const thoughtInput = document.getElementById("thought-input");
-  const submitButton = document.getElementById("submit-button");
-  const relatesCheckbox = document.getElementById("relates-checkbox");
-  const finalMessage = document.getElementById("final-message");
-  const postForm = document.getElementById("post-form");
-  const key = getTodayKey();
-  if (!localStorage.getItem(key)) {
-    localStorage.setItem(key, 0);
-  }
   updatePostCounter();
-  if (count >= 3) {
-    thoughtInput.disabled = !0;
-    submitButton.disabled = !0;
-    relatesCheckbox.disabled = !0;
-    submitButton.style.cursor = "not-allowed";
-    const body = document.body;
-    if (body.classList.contains("night")) {
-      finalMessage.classList.add("show");
-    } else {
-      finalMessage.classList.remove("show");
-    }
-    postForm.classList.add("post-limit-locked");
-  }
+  if (count < 3) return;
+
+  const input = document.getElementById("thought-input");
+  const submit = document.getElementById("submit-button");
+  const checkbox = document.getElementById("relates-checkbox");
+  const final = document.getElementById("final-message");
+  const form = document.getElementById("post-form");
+
+  input.disabled = true;
+  submit.disabled = true;
+  checkbox.disabled = true;
+  submit.style.cursor = "not-allowed";
+  form.classList.add("post-limit-locked");
+
+  const isNight = document.body.classList.contains("night");
+  final.classList.toggle("show", isNight);
 }
+
 async function submitThought(text) {
   const themeText = document.querySelector(".theme-text")?.textContent;
   const checkbox = document.getElementById("relates-checkbox");
@@ -244,10 +160,7 @@ async function submitThought(text) {
   const postData = {
     text,
     theme: checkbox.checked ? themeText : null,
-    timestamp: new Date().toISOString(),
   };
-
-  console.log("📤 sending POST:", postData);
 
   try {
     const res = await fetch("/api/submit", {
@@ -258,13 +171,13 @@ async function submitThought(text) {
 
     if (!res.ok) throw new Error("submit failed");
 
-    const result = await res.json();
-    console.log("✅ post submitted:", result);
-
+    await res.json();
     incrementPostCount();
     checkPostLimit();
     loadRecentPosts();
     window.scrollTo({ top: 0, behavior: "smooth" });
+
+    const submitButton = document.getElementById("submit-button");
     submitButton.disabled = true;
     submitButton.style.opacity = "0.6";
     setTimeout(() => {
@@ -279,139 +192,113 @@ async function submitThought(text) {
 }
 
 function truncateText(text) {
-  if (text.length <= 250) return text;
-  return text.slice(0, 250) + "...";
+  return text.length <= 250 ? text : text.slice(0, 250) + "...";
 }
+
 function createPostElement(post, animate = true) {
-  const postElement = document.createElement("div");
-  postElement.dataset.id = post.id;
-  postElement.classList.add("post");
+  const postEl = document.createElement("div");
+  postEl.dataset.id = post.id;
+  postEl.classList.add("post");
 
-  if (animate) {
-    requestAnimationFrame(() => {
-      postElement.classList.add("visible");
-    });
-  } else {
-    postElement.classList.add("visible");
-  }
+  setTimeout(() => postEl.classList.add("visible"), animate ? 30 : 0);
 
-  const created = new Date(post.created_at);
-  const timeString = created.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  const dateString = created.toLocaleDateString([], {
-    month: "short",
-    day: "numeric",
-  });
-  const timestampText = `${dateString} | ${timeString}`;
+  const utcDate = new Date(post.created_at);
+  const timeSpan = document.createElement("span");
+  timeSpan.className = "post-time";
+  timeSpan.dataset.timestamp = post.created_at;
+  timeSpan.textContent = getRelativeTimeString(utcDate);
+
+  const themeSpan = document.createElement("span");
+  themeSpan.className = "post-theme";
+  themeSpan.textContent = post.theme || "";
+  themeSpan.style.visibility = post.theme ? "visible" : "hidden";
 
   const header = document.createElement("div");
   header.classList.add("post-header");
-  header.innerHTML = `
-    ${
-      post.theme
-        ? `<span class="post-theme">${post.theme}</span>`
-        : `<span class="post-theme" style="visibility:hidden;">no theme</span>`
-    }
-    <span class="post-time">${timestampText}</span>
-  `;
+  header.appendChild(themeSpan);
+  header.appendChild(timeSpan);
 
   const divider = document.createElement("hr");
   divider.className = "post-divider";
 
   const contentEl = document.createElement("p");
   contentEl.className = "post-content";
-  const fullText = post.text;
-  const words = fullText.split(" ");
-  const truncateLimit = 40;
+  const words = post.text.split(" ");
+  const limit = 40;
 
-  if (words.length > truncateLimit) {
-    const shortText = words.slice(0, truncateLimit).join(" ") + "...";
+  if (words.length > limit) {
+    const short = words.slice(0, limit).join(" ") + "...";
     let expanded = false;
-    contentEl.textContent = shortText;
     const toggleBtn = document.createElement("span");
-    toggleBtn.textContent = "read more";
     toggleBtn.className = "read-more";
+    toggleBtn.textContent = "read more";
+
     toggleBtn.addEventListener("click", () => {
       expanded = !expanded;
-      contentEl.textContent = expanded ? fullText : shortText;
+      contentEl.textContent = expanded ? post.text : short;
       toggleBtn.textContent = expanded ? "show less" : "read more";
       contentEl.appendChild(toggleBtn);
     });
+
+    contentEl.textContent = short;
     contentEl.appendChild(toggleBtn);
   } else {
-    contentEl.textContent = fullText;
+    contentEl.textContent = post.text;
   }
 
-  postElement.appendChild(header);
-  postElement.appendChild(divider);
-  postElement.appendChild(contentEl);
-  return postElement;
+  postEl.appendChild(header);
+  postEl.appendChild(divider);
+  postEl.appendChild(contentEl);
+  return postEl;
 }
 
 async function loadRecentPosts() {
-  const postsFeed = document.getElementById("posts-feed");
-
-  const existingEls = [...postsFeed.children];
-  const currentIds = new Set(existingEls.map((el) => el.dataset.id));
+  const feed = document.getElementById("posts-feed");
 
   try {
     const res = await fetch("/api/loadPosts");
-    if (!res.ok) throw new Error("failed");
+    if (!res.ok) throw new Error("load failed");
 
     const { posts } = await res.json();
-    if (!posts || posts.length === 0) return;
+    if (!posts?.length) return;
 
-    let updated = false;
+    const currentIds = new Set(
+      [...feed.children].map((el) => String(el.dataset.id))
+    );
+    const newPosts = posts.filter((p) => !currentIds.has(String(p.id)));
 
-    for (const post of posts) {
-      if (!currentIds.has(post.id)) {
-        const el = createPostElement(post, true);
-        postsFeed.insertBefore(el, postsFeed.firstChild);
-        updated = true;
-      }
+    for (let i = newPosts.length - 1; i >= 0; i--) {
+      const el = createPostElement(newPosts[i], true);
+      feed.insertBefore(el, feed.firstChild);
     }
 
-    existingEls.forEach((el) => el.classList.add("visible"));
+    document.getElementById("empty-placeholder").style.display =
+      feed.children.length === 0 ? "block" : "none";
 
-    if (updated) {
-      while (postsFeed.children.length > 50) {
-        postsFeed.removeChild(postsFeed.lastChild);
-      }
+    while (feed.children.length > 50) {
+      feed.removeChild(feed.lastChild);
     }
   } catch (err) {
     console.error("❌ polling error:", err);
   }
 }
 
-function getUsedThemes() {
-  return JSON.parse(localStorage.getItem("usedThemes") || "[]");
+function startTimeAgoUpdater() {
+  setInterval(() => {
+    const spans = document.querySelectorAll(".post-time");
+    spans.forEach((span) => {
+      const raw = span.dataset.timestamp;
+      if (!raw) return;
+      const date = new Date(raw);
+      span.textContent = getRelativeTimeString(date);
+    });
+  }, 60000);
 }
-function markThemeUsed(theme) {
-  const used = getUsedThemes();
-  used.push(theme);
-  localStorage.setItem("usedThemes", JSON.stringify(used));
-}
-function getTonightTheme() {
-  const used = getUsedThemes();
-  const unused = allThemes.filter((t) => !used.includes(t));
-  if (unused.length === 0) {
-    localStorage.removeItem("usedThemes");
-    return getTonightTheme();
-  }
-  const randomIndex = Math.floor(Math.random() * unused.length);
-  const chosen = unused[randomIndex];
-  markThemeUsed(chosen);
-  return chosen;
-}
+
 function getNextTransitionDelay() {
   const now = new Date();
   const hour = now.getHours();
-  const minutes = now.getMinutes();
-  const seconds = now.getSeconds();
-
-  let target = new Date(now);
+  const target = new Date(now);
 
   if (hour >= 5 && hour < 22) {
     target.setHours(22, 0, 0, 0);
@@ -420,34 +307,25 @@ function getNextTransitionDelay() {
     if (hour >= 22) target.setDate(target.getDate() + 1);
   }
 
-  const diff = target - now;
-  return diff;
+  return target - now;
 }
 
 function scheduleTimeTransition() {
   const delay = getNextTransitionDelay();
   setTimeout(() => {
-    console.log("🔁 time window changed, updating...");
-
-    const prevMode = document.body.classList.contains("night")
-      ? "night"
-      : "day";
-
+    const prev = document.body.classList.contains("night") ? "night" : "day";
     setThemeBasedOnTime();
     updatePostingAccess();
+    const curr = document.body.classList.contains("night") ? "night" : "day";
 
-    const newMode = document.body.classList.contains("night") ? "night" : "day";
-    if (newMode !== prevMode) {
-      playTransition(newMode);
-    }
-
+    if (prev !== curr) playTransition(curr);
     scheduleTimeTransition();
   }, delay);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("✅ DOMContentLoaded triggered");
   setThemeBasedOnTime();
+  loadTheme();
   updatePostingAccess();
   updatePostCounter();
   checkPostLimit();
@@ -457,17 +335,18 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("submit-button").addEventListener("click", () => {
     const count = getPostCount();
     if (count >= 3) return;
+
     const input = document.getElementById("thought-input");
-    const thought = input.value.trim();
-    if (thought !== "") {
-      submitThought(thought);
+    const text = input.value.trim();
+    if (text !== "") {
+      submitThought(text);
       input.value = "";
       if (window.scrollY > 100) {
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     }
   });
-  setInterval(() => {
-    loadRecentPosts();
-  }, 1000);
+
+  setInterval(loadRecentPosts, 15000);
+  startTimeAgoUpdater();
 });

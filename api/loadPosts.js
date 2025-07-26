@@ -1,6 +1,5 @@
 import dotenv from "dotenv";
-dotenv.config({ path: ".env" });
-
+dotenv.config();
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -16,8 +15,8 @@ export default async function handler(req, res) {
   const { data, error } = await supabase
     .from("posts")
     .select("*")
-    .order("created_at", { ascending: false }) // newest first
-    .limit(50); // adjust if you want fewer or more
+    .order("id", { ascending: false })
+    .limit(50);
 
   if (error) {
     console.error("❌ failed to load posts:", error);

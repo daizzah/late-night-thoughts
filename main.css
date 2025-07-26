@@ -94,11 +94,22 @@ header .nav-content {
 
 header h1 {
   background: rgba(244, 237, 208, 0.07);
-  border-radius: 30px;
+  border-radius: 40px;
   display: inline-block;
-  font-size: clamp(2rem, 5vw, 3rem);
-  padding: 3px 18px;
+  padding: 6px 24px; /* wider padding */
   font-weight: 800;
+  text-align: center;
+  font-size: inherit; /* inherit from .site-title */
+}
+
+.site-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: clamp(0.4rem, 1.2vw, 0.7rem);
+  font-size: clamp(2.2rem, 6vw, 3.6rem); /* BUMPED UP */
+  line-height: 1.1;
 }
 
 #page-content {
@@ -356,6 +367,12 @@ footer::before {
   color: #eee;
   padding: 0 clamp(14px, 3vw, 18px) clamp(14px, 3vw, 18px);
   line-height: clamp(1rem, 4vw, 1.5rem);
+}
+
+.site-icon {
+  height: 1.1em; /* slightly larger icon */
+  width: auto;
+  vertical-align: middle;
 }
 
 #stars-background {
@@ -645,7 +662,7 @@ body.day #prompt-checkbox input[type="checkbox"] {
 }
 
 body.night #prompt-checkbox input[type="checkbox"] {
-  accent-color: #f4edd0;
+  accent-color: #bfb89a;
 }
 
 #locked-message {
